@@ -1,6 +1,6 @@
-#this version implemented a placement function, as well as turn and observe. Modification to original source code by Tucker Hortman.
-using System;
-
+using Internal;
+//this version implemented a placement function, as well as turn and observe. Modification to original source code by Tucker Hortman.
+//this version includes an attack function and truck functionality
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,72 +12,81 @@ namespace Game
     class piece
     {
         public int Health = 1;
-        public int Atck = 1;
+        public int Attack = 1;
         public int side = 0;
-        int Type;
+        
+        public int Type;
+
+        public  piece[] cargo = new piece[5];
+        
+        bool hasAttacked = false;
 
         /* Types:
-         * 0 = pawn    1,1
-         * 1 = rook    1,4
-         * 2 = knight  2,2
-         * 3 = bishop  2,2
-         * 4 = queen   3,8
+         * 0 = Grunt    1,1
+         * 1 = Grunt    1,4
+         * 2 = Healer  2,2
+         * 3 = Sniper  2,2
+         * 4 = Truck   3,8
          * 5 = king    1,1
          */
 
         string Symbol;
         /*
          * Symbols:
-         * p = pawn
-         * r = rook
-         * k = knight
-         * b = bishop
+         * G = Grunt
+         * H = Healer
+         * S = Sniper
+         * T = Truck
          * q = queen
          * K = king
          */
 
         int xCord;
         int yCord;
+        int ID;
 
         public piece(int type)
         {
+            Random rand = new Random();
+            this.ID = rand.Next(0,325);
             if(type == 1)
             {
-                this.Symbol = "g";
+                this.Symbol = "G";
                 this.Health = 1;
-                this.Atck = 1;
+                this.Attack = 1;
                 this.Type = 1;
             }
 
             if(type == 2)
             {
-                this.Symbol = "r";
+                this.Symbol = "H";
                 this.Health = 4;
-                this.Atck = 1;
+                this.Attack = 1;
                 this.Type = 2;
             }
 
             if(type == 3)
             {
-                this.Symbol = "k";
+                this.Symbol = "S";
                 this.Health = 2;
-                this.Atck = 2;
+                this.Attack = 2;
                 this.Type = 3;
             }
 
             if(type == 4)
             {
-                this.Symbol = "b";
+                this.Symbol = "T";
                 this.Health = 2;
-                this.Atck = 2;
+                this.Attack = 2;
                 this.Type = 4;
+                piece[] carg = new piece[4];
             }
 
             if(type == 5)
             {
                 this.Symbol = "q";
                 this.Health = 8;
-                this.Atck = 3;
+                this.Attack = 3;
                 this.Type = 5;
             }
 
@@ -85,11 +94,15 @@ namespace Game
             {
                 this.Symbol = "K";
                 this.Health = 1;
-                this.Atck = 1;
+                this.Attack = 1;
                 this.Type = 6;
             }
         }
 
+        public int getID()
+        {
+            return this.ID;
+        }
         public string getSymbol()
         {
             return this.Symbol;
@@ -105,6 +118,12 @@ namespace Game
             this.yCord = y;
         }
 
+        public void setSide(int s){
+            this.side = s;
+        }
+        public int getSide(){
+            return this.side;
+        }
 
         public int getXCord()
         {
@@ -115,11 +134,332 @@ namespace Game
         {
             return this.yCord;
         }
-        public void getMoves()
+
+        public bool getHasAttacked()
         {
+            return this.hasAttacked;
+        }
+        public void setHasAttacked(bool ifAttacked)
+        {
+            this.hasAttacked = ifAttacked;
+        }
+
+        public void resetAttacked()
+        {
+            this.hasAttacked = false;
+        }
+        
+         public void getAttacks(int x, int y, Tile[,] map)
+        {
+            int side = map[y,x].getPiece().getSide();// side = aliance
+            Console.WriteLine("Piece of type "+ map[y,x].getPiece().getSymbol() + " and of side "+ side +" wishes to attack.");
+            int adjacentSide;
+            //tracks tiles able to be attacked
+            int[] choice = {0,0,0,0,0,0,0,0,0,0};
+            string[] choiceCoordinatesDisplay = new string[10];
+            //Up and Left
+            if(map[y-1,x-1] != null) //switched y and x because of how its read in the matrix
+            {
+                //adjacentSide = map[y - 1, x - 1].getPiece().side;
+                if (map[y - 1, x - 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y - 1, x - 1].getPiece().getSymbol() + " unit at (" + (x-1) + " , " + (y-1) + ")");
+                    choice[1] = 1;
+                    choiceCoordinatesDisplay[1] = "("+(x-1)+","+(y-1)+")";
+                }
+            }
+            //Forward
+            if (map[y - 1 , x] != null)
+            {
+                //adjacentSide = map[y-1, x].getPiece().side;
+                if (map[y - 1 , x].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y - 1 , x].getPiece().getSymbol() + " unit at (" + x + " , " + (y-1) + ")");
+                    choice[2] = 1;
+                    choiceCoordinatesDisplay[2] = "("+(x)+","+(y-1)+")";
+                }
+            }
+            //Up and Right
+            if (map[y - 1, x + 1] != null)
+            {
+                //adjacentSide = map[x + 1, y - 1].getPiece().side;
+                if (map[y - 1, x + 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y - 1, x + 1].getPiece().getSymbol() + " unit at (" + (x+1) + " , " + (y-1) + ")");
+                    choice[3] = 1;
+                    choiceCoordinatesDisplay[3] = "("+(x+1)+","+(y-1)+")";
+                }
+            }
+            //Left
+            if (map[y, x - 1 ] != null)
+            {
+                //adjacentSide = map[y, x - 1].getPiece().side;
+                if (map[ y, x - 1 ].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y, x - 1].getPiece().getSymbol() + " unit at (" + (x-1) + " , " + y + ")");
+                    choice[4] = 1;
+                    choiceCoordinatesDisplay[4] = "("+(x-1)+","+(y)+")";
+                }
+            }
+            //Right
+            if (map[y, x+1 ] != null)
+            {
+                //adjacentSide = map[x + 1, y].getPiece().side;
+                if (map[y, x + 1 ].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y, x + 1].getPiece().getSymbol() + " unit at (" + (x+1) + " , " + y + ")");
+                    choice[6] = 1;
+                    choiceCoordinatesDisplay[6] = "("+(x+1)+","+(y)+")";
+                }
+            }
+            //Down and Left
+            if (map[y + 1, x - 1] != null)
+            {
+                //adjacentSide = map[y + 1, x - 1].getPiece().side;
+                if (map[y + 1, x - 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y + 1, x - 1].getPiece().getSymbol() + " unit at (" + (x-1) + " , " + (y+1) + ")");
+                    choice[7] = 1;
+                    choiceCoordinatesDisplay[7] = "("+(x-1)+","+(y+1)+")";
+                }
+            }
+            //Down
+            if (map[y + 1, x] != null)
+            {
+                //adjacentSide = map[x, y + 1].getPiece().side;
+                if (map[y+1 , x].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y + 1, x].getPiece().getSymbol() + " unit at (" + x + " , " + (y+1) + ")");
+                    choice[8] = 1;
+                    choiceCoordinatesDisplay[8] = "("+(x)+","+(y+1)+")";
+
+                }
+            }
+            //Down and Right
+            if (map[y + 1, x + 1] != null)
+            {
+                //adjacentSide = map[x + 1, y + 1].getPiece().side;
+                if (map[y + 1, x + 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can attack the " + map[y + 1, x + 1].getPiece().getSymbol() + " unit at (" + (x+1) + " , " + (y+1) + ")");
+                    choice[9] = 1;
+                    choiceCoordinatesDisplay[9] = "("+(x+1)+","+(y+1)+")";
+                }
+            }
+
+            
+            Console.WriteLine("Do you wish to attack?: y/n");
+            string input = Console.ReadLine();
+            if(input=="y"||input=="Y")
+            {
+                
+                Console.WriteLine("What tile?");
+                for (int i = 0; i < 10; i++)
+                {
+                    if(choice[i] == 1)
+                    {
+                        Console.WriteLine(i+". " + choiceCoordinatesDisplay[i]);
+                    }
+                }
+                int trigger;
+                trigger = Convert.ToInt32(Console.ReadLine());
+                Console.WriteLine("Chose to attack "+ choiceCoordinatesDisplay[trigger]);
+                attack(trigger, map);
+            }
+            
+
+        }
+
+        public void attack(int direction, Tile[,] map)
+        {
+            Console.WriteLine("Attacking the "+ direction);
+            int test = direction;
+            //Actually does the attacking
+            switch (direction)
+            {
+                case 1:
+                    Console.WriteLine("Attacking the :" + map[this.xCord - 1, this.yCord - 1].getPiece().getSymbol());
+                    map[this.xCord - 1, this.yCord - 1].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 2:
+                    Console.WriteLine("Attacking the :" + map[this.xCord , this.yCord - 1].getPiece().getSymbol());
+                    map[this.xCord , this.yCord - 1].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 3:
+                    Console.WriteLine("Attacking the :" + map[this.xCord + 1, this.yCord - 1].getPiece().getSymbol());
+                    map[this.xCord + 1, this.yCord - 1].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 4:
+                    Console.WriteLine("Attacking the :" + map[this.xCord - 1, this.yCord ].getPiece().getSymbol());
+                    map[this.xCord - 1, this.yCord ].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 6:
+                    Console.WriteLine("Attacking the :" + map[this.xCord +1, this.yCord ].getPiece().getSymbol());
+                    map[this.xCord + 1, this.yCord ].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 7:
+                    Console.WriteLine("Attacking the :" + map[this.xCord - 1, this.yCord + 1].getPiece().getSymbol());
+                    map[this.xCord - 1, this.yCord + 1].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 8:
+                    Console.WriteLine("Attacking the :" + map[this.xCord , this.yCord + 1].getPiece().getSymbol());
+                    map[this.xCord , this.yCord + 1].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                case 9:
+                    Console.WriteLine("Attacking the :" + map[this.xCord + 1, this.yCord + 1].getPiece().getSymbol());
+                    map[this.xCord + 1, this.yCord + 1].getPiece().Health -= this.Attack;
+                    Console.WriteLine("You delt " + this.Attack + " damage!");
+                    break;
+                default:
+                    Console.WriteLine("Error in attack()");
+                    break;
+            }
+        }
+        public void addToTruck(piece piece1, Tile[,] map)
+        {
+            Console.WriteLine("What piece would you like to put in the truck?:");
+            //tracks tiles able to be attacked
+            int[] choice = new int[10];
+            //Up and Left
+            if (map[this.xCord - 1, this.yCord - 1] != null)
+            {
+                if (map[this.xCord - 1, this.yCord - 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord - 1, this.yCord - 1].getPiece().getSymbol() + " at (" + (this.xCord - 1) + " , " + (this.yCord - 1) + ")");
+                    choice[1] = 1;
+                }
+            }
+            //Forward
+            if (map[this.xCord, this.yCord - 1] != null)
+            {
+                if (map[this.xCord, this.yCord - 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord, this.yCord - 1].getPiece().getSymbol() + " at (" + this.xCord + " , " + (this.yCord - 1) + ")");
+                    choice[2] = 1;
+                }
+            }
+            //Up and Right
+            if (map[this.xCord + 1, this.yCord - 1] != null)
+            {
+                if (map[this.xCord + 1, this.yCord - 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord + 1, this.yCord - 1].getPiece().getSymbol() + " at (" + (this.xCord + 1) + " , " + (this.yCord - 1) + ")");
+                    choice[3] = 1;
+                }
+            }
+            //Left
+            if (map[this.xCord - 1, this.yCord] != null)
+            {
+                if (map[this.xCord - 1, this.yCord].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord - 1, this.yCord].getPiece().getSymbol() + " at (" + (this.xCord - 1) + " , " + this.yCord + ")");
+                    choice[4] = 1;
+                }
+            }
+            //Right
+            if (map[this.xCord + 1, this.yCord] != null)
+            {
+                if (map[this.xCord + 1, this.yCord].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord + 1, this.yCord].getPiece().getSymbol() + " at (" + (this.xCord + 1) + " , " + this.yCord + ")");
+                    choice[6] = 1;
+                }
+            }
+            //Down and Left
+            if (map[this.xCord - 1, this.yCord + 1] != null)
+            {
+                if (map[this.xCord - 1, this.yCord + 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord - 1, this.yCord + 1].getPiece().getSymbol() + " at (" + (this.xCord - 1) + " , " + (this.yCord + 1) + ")");
+                    choice[7] = 1;
+                }
+            }
+            //Down
+            if (map[this.xCord, this.yCord + 1] != null)
+            {
+                if (map[this.xCord, this.yCord + 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord, this.yCord + 1].getPiece().getSymbol() + " at (" + this.xCord + " , " + (this.yCord + 1) + ")");
+                    choice[8] = 1;
+                }
+            }
+            //Down and Right
+            if (map[this.xCord + 1, this.yCord + 1] != null)
+            {
+                if (map[this.xCord + 1, this.yCord + 1].getPiece() != null)
+                {
+                    Console.WriteLine("You can add the " + map[this.xCord + 1, this.yCord + 1].getPiece().getSymbol() + " at (" + (this.xCord + 1) + " , " + (this.yCord + 1) + ")");
+                    choice[9] = 1;
+                }
+            }
+
+
+            Console.WriteLine("Do you wish to add a unit to the truck?: y/n");
+
+            if (Console.ReadLine().Equals("y"))
+            {
+                int trigger;
+                Console.WriteLine("What unit?");
+                for (int i = 0; i < 10; i++)
+                {
+                    if (choice[i] == 1)
+                    {
+                        Console.WriteLine(i);
+                    }
+                }
+                trigger = Convert.ToInt32(Console.ReadLine());
+
+                for(int i = 0; i <5; i++)
+                {
+                    if(this.cargo[i] == null)
+                    {
+                        switch (trigger)
+                        {
+                            case 1:
+                                cargo[i] = map[this.xCord - 1, this.yCord - 1].getPiece();
+                                //map[this.xCord - 1, this.yCord - 1].getPiece() = null;
+                                break;
+                            case 2:
+                                cargo[i] = map[this.xCord , this.yCord - 1].getPiece();
+                                break;
+                            case 3:
+                                cargo[i] = map[this.xCord + 1 , this.yCord - 1].getPiece();
+                                break;
+                            case 4:
+                                cargo[i] = map[this.xCord-1, this.yCord].getPiece();
+                                break;
+                            case 6:
+                                cargo[i] = map[this.xCord+1, this.yCord ].getPiece();
+                                break;
+                            case 7:
+                                cargo[i] = map[this.xCord-1, this.yCord + 1].getPiece();
+                                break;
+                            case 8:
+                                cargo[i] = map[this.xCord, this.yCord +1].getPiece();
+                                break;
+                            case 9:
+                                cargo[i] = map[this.xCord + 1, this.yCord + 1].getPiece();
+                                break;
+                            default:
+                                Console.WriteLine("Error");
+                                break;
+                        }
+                        break;   
+                    }
+                }
+            }
+
 
         }
     }
+
     class Map
     {
         public static void displayMap(Tile[,] map)
@@ -198,15 +538,21 @@ namespace Game
         }
         public static void placePawns(Tile[,] map)
         {
+            
             for (int i = 0; i < 9; i++)
             {
-                map[2, i].setPiece(new piece(1));
+                map[2, i].setPiece(new piece(4));
                 map[2, i].getPiece().setXCord(i);
                 map[2, i].getPiece().setYCord(2);
+                
 
-                map[7, i].setPiece(new piece(1));
+                map[7, i].setPiece(new piece(4));
                 map[7, i].getPiece().setXCord(i);
                 map[7, i].getPiece().setYCord(7);
+
+                //added these
+                map[2, i].getPiece().setSide(1);
+                map[7, i].getPiece().setSide(2);
             }
         }
         public static void dropMines(Random rand, Tile[,] map)
@@ -241,10 +587,15 @@ namespace Game
                             Console.Write("      |      ");
                             for (int j = 0; j < 9; j++)
                             {
+                                if( map[i, j].getElevation() >= 0 ) //to adjust the spacing
+                                    Console.Write(" ");
+                                    
                                 Console.Write(map[i, j].getElevation() + " ");
+
+                                Console.Write(" ");
                             }
                             
-                            
+                            Console.Write("  |      ");
                             Console.WriteLine("");
                  }
             
@@ -270,7 +621,14 @@ namespace Game
                  if (map[y, x].getPiece() != null){
                     Console.WriteLine("There exists a piece on this tile of the type : "+ map[y, x].getPiece().getSymbol());
                     Console.WriteLine("Its health is : "+ map[y, x].getPiece().Health);
-                    Console.WriteLine("Its attack is : "+ map[y, x].getPiece().Atck);
+                    Console.WriteLine("Its attack is : "+ map[y, x].getPiece().Attack);
+
+                    int side = map[y,x].getPiece().side;
+                    //Console.WriteLine("Its on player "+side+"'s side.");
+                    bool[,] surroundingEnemies = new bool[3,3];
+                    if(map[y,x].getPiece().getHasAttacked() == false)
+                        surroundingEnemies = checkForEnemies(side, x, y, map);
+
                     Console.WriteLine("Do you wish to move this unit? Y/N? ");
                     string input = Console.ReadLine();
                     if(input=="y"){
@@ -314,6 +672,10 @@ namespace Game
                         //in the big game, this will not be an issue, as most variables are ready like global variables in a script
                         //either that or we can make the two players static (but that would limit the number of players to only 2 permanently
                         //currentPlayer.displayGold();
+
+                        if(map[y,x].getPiece().getHasAttacked() == false) //calls this again
+                            surroundingEnemies = checkForEnemies(side, x, y, map);
+
                         return cost;
                     }
                  }
@@ -419,13 +781,20 @@ namespace Game
             if(map[x, y]!=null){
                 Console.WriteLine("This piece, which exists on the point: ("+x+", "+y+")");
                 Console.WriteLine("Is of the height: "+ map[y,x].getElevation());
-                Console.Write("Its neighbors: ");
+
                 
+
+                Console.Write("Its neighbors: ");
+
                 bool[] possibleDirections = new bool[4];
+                
+
+                
+
                 try
                 {
                     if(map[y-1,x]!=null){
-                        Console.Write("Up,");
+                        Console.Write("Up, ");
                         possibleDirections[0]=true;
                     }
                 }
@@ -435,7 +804,7 @@ namespace Game
                 try
                 {
                     if(map[y, x + 1]!=null){
-                        Console.Write("Right,");
+                        Console.Write("Right, ");
                         possibleDirections[1]=true;
                     }
                 }
@@ -445,7 +814,7 @@ namespace Game
                 try
                 {
                     if(map[y+1, x]!=null){
-                        Console.Write("Down,");
+                        Console.Write("Down, ");
                         possibleDirections[2]=true;
                     }
                 }
@@ -455,7 +824,7 @@ namespace Game
                 try
                 {
                     if(map[y, x -1]!=null){
-                        Console.Write("Left,");
+                        Console.Write("Left, ");
                         possibleDirections[3]=true;
                     }
                 }
@@ -481,6 +850,67 @@ namespace Game
                      calculateDistance(map[y,x].getElevation(), map[y,x-1].getElevation());
                 }
             }
+        }
+
+        public static bool[,] checkForEnemies(int side, int x, int y, Tile[,] map){
+            bool[,] possibleEnemies = {{false,false,false,},{false,false,false,},{false,false,false}};
+            // 1. up, 2. up_Right, 3. right, 4. down_Right, 5. down, 
+            //6. down_Left, 7. left, 8. up_Left
+            bool oneEnemyFound = false;
+            int player_side = side;
+            if(side==null) // if side wasnt declared. 
+                player_side = map[y,x].getPiece().getSide();
+            //checking surroundings
+            for (int i = 0; i < 3;i++){
+                for(int j = 0; j < 3; j++){
+                    try{ //from -1 to 1
+                        if(map[y+i-1,x+j-1].getPiece().getSide() != player_side){
+                            possibleEnemies[i,j] = true;
+                            oneEnemyFound = true;
+                        }
+                            
+                    }
+                    catch(Exception e){
+
+                    }
+                }
+            }
+            if(oneEnemyFound)
+                displayPossibleEnemies(possibleEnemies, x, y, map);
+            return possibleEnemies;
+        }
+        public static void displayPossibleEnemies(bool[,] possibleEnemies, int x, int y, Tile[,] map){
+            Console.WriteLine("There was an enemy found to the: ");
+            for(int i = 0; i < possibleEnemies.GetLength(0); i++){
+                for(int j = 0; j < possibleEnemies.GetLength(1); j++){
+                    if(possibleEnemies[i,j] == true){
+                        
+                        if (i == 0  && j == 2)
+                            Console.Write("top-right, ");
+                        if (i == 1  && j == 2)
+                            Console.Write("right, ");
+                        if (i == 2  && j == 2)
+                            Console.Write("bottom-right, ");
+                        if (i == 0  && j == 1)
+                            Console.Write("top, ");
+                        if (i == 1  && j == 1)
+                            Console.Write("center, "); //not possible, unless checking somewhere else
+                        if (i == 2  && j == 1)
+                            Console.Write("bottom, ");
+                        if (i == 0  && j == 0)
+                            Console.Write("top-left, ");
+                        if (i == 1  && j == 0)
+                            Console.Write("left, "); 
+                        if (i == 2  && j == 0)
+                            Console.Write("bottom-left, ");
+                        
+                    }
+                }
+            }
+            Console.WriteLine("Do you wisht to attack a unit? Y/N");
+            string input = Console.ReadLine();
+            if(input=="y" || input == "Y")
+                map[y,x].getPiece().getAttacks(x,y,map);
         }
         
     }
@@ -610,16 +1040,23 @@ namespace Game
             
             player player1 = new player(1);
             player player2 = new player(2);
+
+            
             
             int currentTurn = 0;
             
             while (true){
             
                 player1.displayTurn();
-                Console.WriteLine("Do you want to observe a tile or buy a unit? /n1.Observe /2.Buy ");
+                Console.Write("Do you want to observe a tile or buy a unit? \n\n1. Observe \n2. Buy \n3. View Map \n");
                 
                 int inp = Convert.ToInt32(Console.ReadLine());
                 
+                if(inp == 3){
+                    Map.displayBoth(map);
+                    continue; //restarts while loop
+                }
+
                 Console.WriteLine("Enter in the x and y coordinates of a square on the board: ");
                 int X = Convert.ToInt32(Console.ReadLine());
                 Console.Write(", ");
@@ -635,6 +1072,7 @@ namespace Game
                     player1.setGold(player1.gold-cost); 
                     if(cost!=0) player1.displayGold();
                 }
+                
                 
             }
         }
